@@ -1,0 +1,16 @@
+@media (max-width: 480px) {
+    .options-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .btn-option { font-size: 1.1rem; padding: 14px 16px; }
+    .hand-svg { width: 55px; height: 75px; }
+    .operator-symbol, .equals-symbol { font-size: 1.6rem; }
+    .card { padding: 18px 12px; }
+    .mascot { width: 70px; height: 70px; }
+    .mascot-face { width: 56px; height: 56px; top: 7px; left: 7px; }
+    .mascot-eyes { top: 18px; gap: 10px; }
+    .mascot-eye { width: 10px; height: 12px; }
+    .mascot-mouth { bottom: 14px; width: 16px; height: 7px; }
+    .mascot-hat { width: 28px; height: 18px; top: -6px; }
+    .speech-bubble { font-size: 0.75rem; padding: 8px 14px; max-width: 160px; }
+    .title-main { font-size: 1.5rem; }
+    .result-stars { font-size: 2.5rem; }
+}

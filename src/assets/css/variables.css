@@ -1,0 +1,19 @@
+:root {
+    --bg: #FFF8E7;
+    --primary: #FF6B6B;
+    --secondary: #4ECDC4;
+    --accent: #FFE66D;
+    --purple: #A78BFA;
+    --green: #34D399;
+    --blue: #60A5FA;
+    --orange: #FB923C;
+    --pink: #F472B6;
+    --text: #4A3728;
+    --card: #FFFFFF;
+    --shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
+    --radius: 24px;
+    --radius-sm: 16px;
+    --font: 'Segoe UI', 'Poppins', 'Nunito', system-ui, -apple-system, sans-serif;
+    --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
