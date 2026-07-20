@@ -6,6 +6,7 @@ import { getRandomEncouragement, getRandomComfort } from './utils/helpers.js'
 import { generateQuestions } from './utils/questions.js'
 import { renderHandsForNumber } from './utils/hands.js'
 import { spawnConfetti, spawnMiniConfetti } from './utils/effects.js'
+import * as api from './utils/api.js'
 
 const currentScreen = ref('screen-menu')
 const currentMode = ref('practice')
@@ -22,22 +23,93 @@ const mascotMouthClass = ref('happy')
 const quizCardWiggle = ref(false)
 const starsEarned = ref(0)
 
-function loadStars() {
+const currentUser = ref(null)
+const loginEmail = ref('')
+const loginName = ref('')
+const loginLoading = ref(false)
+const loginError = ref('')
+
+const stars = ref({ 1: 0, 2: 0, 3: 0, 4: 0 })
+
+const isLoggedIn = computed(() => currentUser.value !== null)
+
+function loadSavedUser() {
   try {
-    const s = localStorage.getItem('jarimatika_stars')
-    return s ? JSON.parse(s) : { 1: 0, 2: 0, 3: 0, 4: 0 }
-  } catch (e) {
-    return { 1: 0, 2: 0, 3: 0, 4: 0 }
+    const raw = localStorage.getItem('jarimatika_user')
+    if (raw) {
+      const u = JSON.parse(raw)
+      currentUser.value = u
+      fetchStarsFromApi(u.id)
+      return true
+    }
+  } catch { /* ignore */ }
+  return false
+}
+
+async function fetchStarsFromApi(userId) {
+  try {
+    const results = await api.getUserResults(userId)
+    const best = { 1: 0, 2: 0, 3: 0, 4: 0 }
+    for (const r of results) {
+      const lid = r.level.id || r.levelId
+      const s = r.starsEarned
+      if (s > (best[lid] || 0)) best[lid] = s
+    }
+    stars.value = best
+    saveLocalStars(best)
+  } catch {
+    loadLocalStars()
   }
 }
 
-const stars = ref(loadStars())
-
-function saveStars() {
+function loadLocalStars() {
   try {
-    localStorage.setItem('jarimatika_stars', JSON.stringify(stars.value))
-  } catch (e) {}
+    const s = localStorage.getItem('jarimatika_stars')
+    if (s) stars.value = JSON.parse(s)
+  } catch { /* ignore */ }
 }
+
+function saveLocalStars(s) {
+  try {
+    localStorage.setItem('jarimatika_stars', JSON.stringify(s))
+  } catch { /* ignore */ }
+}
+
+async function handleLogin() {
+  const email = loginEmail.value.trim()
+  const displayName = loginName.value.trim()
+  if (!email || !displayName) {
+    loginError.value = 'Isi email dan nama dulu ya!'
+    return
+  }
+  loginLoading.value = true
+  loginError.value = ''
+  try {
+    const user = await api.registerUser(email, 'dummy', displayName)
+    currentUser.value = { id: user.id, email: user.email, displayName: user.displayName }
+    localStorage.setItem('jarimatika_user', JSON.stringify(currentUser.value))
+    await fetchStarsFromApi(user.id)
+    showScreen('screen-mode')
+  } catch (err) {
+    if (err.status === 409) {
+      try {
+        const existing = await api.getUserByEmail(email)
+        currentUser.value = { id: existing.id, email: existing.email, displayName: existing.displayName }
+        localStorage.setItem('jarimatika_user', JSON.stringify(currentUser.value))
+        await fetchStarsFromApi(existing.id)
+        showScreen('screen-mode')
+      } catch {
+        loginError.value = 'Gagal masuk, coba lagi.'
+      }
+    } else {
+      loginError.value = 'Gagal daftar, coba lagi.'
+    }
+  } finally {
+    loginLoading.value = false
+  }
+}
+
+loadSavedUser()
 
 function isLevelUnlocked(levelId) {
   if (levelId === 1) return true
@@ -268,7 +340,7 @@ function handleTimeout() {
   }, 1600)
 }
 
-function endQuiz() {
+async function endQuiz() {
   clearTimer()
   const correct = correctCount.value
   const percentage = Math.round((correct / TOTAL_QUESTIONS) * 100)
@@ -282,7 +354,20 @@ function endQuiz() {
   const prevStars = stars.value[currentLevelId.value] || 0
   if (earned > prevStars) {
     stars.value[currentLevelId.value] = earned
-    saveStars()
+    saveLocalStars(stars.value)
+  }
+
+  if (isLoggedIn.value) {
+    try {
+      await api.submitQuizResult({
+        userId: currentUser.value.id,
+        levelId: currentLevelId.value,
+        mode: currentMode.value,
+        totalQuestions: TOTAL_QUESTIONS,
+        correctCount: correct,
+      })
+      await fetchStarsFromApi(currentUser.value.id)
+    } catch { /* ignore */ }
   }
 
   showScreen('screen-result')
@@ -313,6 +398,14 @@ function goToNextLevel() {
     startQuiz(currentLevelId.value)
   }
 }
+
+function goToPlay() {
+  if (isLoggedIn.value) {
+    showScreen('screen-mode')
+  } else {
+    showScreen('screen-login')
+  }
+}
 </script>
 
 <template>
@@ -327,9 +420,33 @@ function goToNextLevel() {
           />
           <h1 class="title-main" style="margin-top:8px;">🌟 <span class="highlight">Jarimatika</span> Star Quiz 🌟</h1>
           <p style="color:#777;font-weight:600;">Kuis Matematika Jari yang Seru!</p>
-          <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:8px;">
-            <button class="btn btn-primary btn-large" @click="showScreen('screen-mode')">🎮 Mulai Bermain!</button>
+          <div style="margin-top:4px;display:flex;gap:14px;flex-wrap:wrap;justify-content:center;">
+            <button class="btn btn-primary btn-large" @click="goToPlay()">🎮 Mulai Bermain!</button>
           </div>
+          <div v-if="isLoggedIn" style="margin-top:12px;font-size:0.85rem;color:#888;">
+            👤 {{ currentUser.displayName }} ({{ currentUser.email }})
+            <button class="btn btn-accent" style="padding:6px 16px;font-size:0.8rem;margin-left:8px;" @click="currentUser=null; localStorage.removeItem('jarimatika_user'); showScreen('screen-menu')">Logout</button>
+          </div>
+        </div>
+      </div>
+
+      <div v-else-if="currentScreen === 'screen-login'" key="login" class="screen" style="display:flex;">
+        <div class="card" style="padding:28px 24px;">
+          <MascotDisplay
+            speech="Halo! Siapa namamu? 😊"
+            mouth-class="happy"
+            @mascot-click="onMascotClick"
+          />
+          <h2 style="font-size:1.5rem;color:var(--text);margin-top:8px;">Masuk / Daftar</h2>
+          <div style="display:flex;flex-direction:column;gap:12px;width:100%;max-width:320px;margin:16px auto;">
+            <input v-model="loginEmail" type="email" placeholder="Email" style="padding:12px 16px;border-radius:16px;border:3px solid #E8E0D8;font-size:1rem;font-family:var(--font);outline:none;transition:border-color 0.2s;" @focus="$event.target.style.borderColor='var(--primary)'" @blur="$event.target.style.borderColor='#E8E0D8'">
+            <input v-model="loginName" type="text" placeholder="Nama Panggilan" style="padding:12px 16px;border-radius:16px;border:3px solid #E8E0D8;font-size:1rem;font-family:var(--font);outline:none;transition:border-color 0.2s;" @focus="$event.target.style.borderColor='var(--primary)'" @blur="$event.target.style.borderColor='#E8E0D8'">
+            <p v-if="loginError" style="color:var(--primary);font-weight:700;font-size:0.9rem;">{{ loginError }}</p>
+            <button class="btn btn-primary btn-large" style="width:100%;" :disabled="loginLoading" @click="handleLogin">
+              {{ loginLoading ? '⏳ Sebentar...' : '🚀 Mulai!' }}
+            </button>
+          </div>
+          <button class="btn btn-accent" @click="showScreen('screen-menu')" style="margin-top:4px;">⬅ Kembali</button>
         </div>
       </div>
 
