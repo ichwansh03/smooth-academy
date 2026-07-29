@@ -2,6 +2,7 @@ package org.ichwan.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import org.ichwan.entity.*;
@@ -23,13 +24,14 @@ public class QuizService {
     @Inject
     LevelService levelService;
 
+    @Transactional
     public QuizResult submitResult(UUID userId, Integer levelId, String mode,
                                    Integer totalQuestions, Integer correctCount) {
         User user = userService.findById(userId);
         Level level = levelService.findById(levelId);
 
         BigDecimal percentage = BigDecimal.valueOf(correctCount.doubleValue() / totalQuestions * 100)
-                .setScale(2, BigDecimal.ROUND_HALF_UP);
+                .setScale(2, java.math.RoundingMode.HALF_UP);
 
         int starsEarned;
         if (percentage.compareTo(BigDecimal.valueOf(90)) >= 0) starsEarned = 3;

@@ -2,6 +2,7 @@ package org.ichwan.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import org.ichwan.entity.User;
@@ -19,6 +20,7 @@ public class UserService {
         return password;
     }
 
+    @Transactional
     public User register(String email, String password, String displayName) {
         if (email == null || password == null) {
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
