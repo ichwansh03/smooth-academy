@@ -24,7 +24,9 @@ const quizCardWiggle = ref(false)
 const starsEarned = ref(0)
 
 const currentUser = ref(null)
+const loginTab = ref('login')
 const loginEmail = ref('')
+const loginPassword = ref('')
 const loginName = ref('')
 const loginLoading = ref(false)
 const loginError = ref('')
@@ -75,34 +77,63 @@ function saveLocalStars(s) {
   } catch { /* ignore */ }
 }
 
-async function handleLogin() {
+async function handleRegister() {
   const email = loginEmail.value.trim()
+  const password = loginPassword.value
   const displayName = loginName.value.trim()
-  if (!email || !displayName) {
-    loginError.value = 'Isi email dan nama dulu ya!'
+  if (!email || !password || !displayName) {
+    loginError.value = 'Isi email, password, dan nama panggilan!'
+    return
+  }
+  if (password.length < 4) {
+    loginError.value = 'Password minimal 4 karakter!'
     return
   }
   loginLoading.value = true
   loginError.value = ''
   try {
-    const user = await api.registerUser(email, 'dummy', displayName)
+    const user = await api.registerUser(email, password, displayName)
     currentUser.value = { id: user.id, email: user.email, displayName: user.displayName }
     localStorage.setItem('jarimatika_user', JSON.stringify(currentUser.value))
     await fetchStarsFromApi(user.id)
     showScreen('screen-mode')
   } catch (err) {
     if (err.status === 409) {
-      try {
-        const existing = await api.getUserByEmail(email)
-        currentUser.value = { id: existing.id, email: existing.email, displayName: existing.displayName }
-        localStorage.setItem('jarimatika_user', JSON.stringify(currentUser.value))
-        await fetchStarsFromApi(existing.id)
-        showScreen('screen-mode')
-      } catch {
-        loginError.value = 'Gagal masuk, coba lagi.'
-      }
+      loginError.value = 'Email sudah terdaftar, silakan login.'
+    } else if (err.status) {
+      loginError.value = 'Gagal (kode ' + err.status + '). Cek console untuk detail.'
     } else {
-      loginError.value = 'Gagal daftar, coba lagi.'
+      loginError.value = 'Tidak bisa hubungi server. Jalankan backend dulu!'
+      console.error('Register error:', err)
+    }
+  } finally {
+    loginLoading.value = false
+  }
+}
+
+async function handleLogin() {
+  const email = loginEmail.value.trim()
+  const password = loginPassword.value
+  if (!email || !password) {
+    loginError.value = 'Isi email dan password!'
+    return
+  }
+  loginLoading.value = true
+  loginError.value = ''
+  try {
+    const user = await api.loginUser(email, password)
+    currentUser.value = { id: user.id, email: user.email, displayName: user.displayName }
+    localStorage.setItem('jarimatika_user', JSON.stringify(currentUser.value))
+    await fetchStarsFromApi(user.id)
+    showScreen('screen-mode')
+  } catch (err) {
+    if (err.status === 401) {
+      loginError.value = 'Email atau password salah.'
+    } else if (err.status) {
+      loginError.value = 'Gagal (kode ' + err.status + '). Cek console.'
+    } else {
+      loginError.value = 'Tidak bisa hubungi server. Jalankan backend dulu!'
+      console.error('Login error:', err)
     }
   } finally {
     loginLoading.value = false
@@ -433,17 +464,24 @@ function goToPlay() {
       <div v-else-if="currentScreen === 'screen-login'" key="login" class="screen" style="display:flex;">
         <div class="card" style="padding:28px 24px;">
           <MascotDisplay
-            speech="Halo! Siapa namamu? 😊"
+            speech="Halo! Ayo daftar atau masuk! 😊"
             mouth-class="happy"
             @mascot-click="onMascotClick"
           />
-          <h2 style="font-size:1.5rem;color:var(--text);margin-top:8px;">Masuk / Daftar</h2>
+          <div style="display:flex;gap:0;margin:12px auto 0;max-width:320px;border-radius:16px;overflow:hidden;border:3px solid var(--primary);">
+            <button :style="{ flex:1, padding:'10px', fontWeight:700, fontSize:'0.95rem', border:'none', cursor:'pointer', background:loginTab==='login'?'var(--primary)':'#FFF0F0', color:loginTab==='login'?'#fff':'var(--primary)', transition:'all 0.2s' }" @click="loginTab='login';loginError=''">Masuk</button>
+            <button :style="{ flex:1, padding:'10px', fontWeight:700, fontSize:'0.95rem', border:'none', cursor:'pointer', background:loginTab==='register'?'var(--primary)':'#FFF0F0', color:loginTab==='register'?'#fff':'var(--primary)', transition:'all 0.2s' }" @click="loginTab='register';loginError=''">Daftar</button>
+          </div>
           <div style="display:flex;flex-direction:column;gap:12px;width:100%;max-width:320px;margin:16px auto;">
             <input v-model="loginEmail" type="email" placeholder="Email" style="padding:12px 16px;border-radius:16px;border:3px solid #E8E0D8;font-size:1rem;font-family:var(--font);outline:none;transition:border-color 0.2s;" @focus="$event.target.style.borderColor='var(--primary)'" @blur="$event.target.style.borderColor='#E8E0D8'">
-            <input v-model="loginName" type="text" placeholder="Nama Panggilan" style="padding:12px 16px;border-radius:16px;border:3px solid #E8E0D8;font-size:1rem;font-family:var(--font);outline:none;transition:border-color 0.2s;" @focus="$event.target.style.borderColor='var(--primary)'" @blur="$event.target.style.borderColor='#E8E0D8'">
+            <input v-if="loginTab==='register'" v-model="loginName" type="text" placeholder="Nama Panggilan" style="padding:12px 16px;border-radius:16px;border:3px solid #E8E0D8;font-size:1rem;font-family:var(--font);outline:none;transition:border-color 0.2s;" @focus="$event.target.style.borderColor='var(--primary)'" @blur="$event.target.style.borderColor='#E8E0D8'">
+            <input v-model="loginPassword" type="password" placeholder="Password" style="padding:12px 16px;border-radius:16px;border:3px solid #E8E0D8;font-size:1rem;font-family:var(--font);outline:none;transition:border-color 0.2s;" @focus="$event.target.style.borderColor='var(--primary)'" @blur="$event.target.style.borderColor='#E8E0D8'">
             <p v-if="loginError" style="color:var(--primary);font-weight:700;font-size:0.9rem;">{{ loginError }}</p>
-            <button class="btn btn-primary btn-large" style="width:100%;" :disabled="loginLoading" @click="handleLogin">
-              {{ loginLoading ? '⏳ Sebentar...' : '🚀 Mulai!' }}
+            <button v-if="loginTab==='login'" class="btn btn-primary btn-large" style="width:100%;" :disabled="loginLoading" @click="handleLogin">
+              {{ loginLoading ? '⏳ Sebentar...' : '🔑 Masuk' }}
+            </button>
+            <button v-if="loginTab==='register'" class="btn btn-primary btn-large" style="width:100%;" :disabled="loginLoading" @click="handleRegister">
+              {{ loginLoading ? '⏳ Sebentar...' : '📝 Daftar' }}
             </button>
           </div>
           <button class="btn btn-accent" @click="showScreen('screen-menu')" style="margin-top:4px;">⬅ Kembali</button>

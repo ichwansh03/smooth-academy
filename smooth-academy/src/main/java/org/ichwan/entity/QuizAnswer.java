@@ -1,10 +1,15 @@
 package org.ichwan.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
+
 import java.util.UUID;
 
 @Entity
 @Table(name = "quiz_answers")
+@Getter @Setter
+@NoArgsConstructor @AllArgsConstructor
+@Builder
 public class QuizAnswer {
 
     @Id
@@ -35,23 +40,4 @@ public class QuizAnswer {
 
     @Column(name = "response_time_ms")
     private Integer responseTimeMs;
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public QuizResult getQuizResult() { return quizResult; }
-    public void setQuizResult(QuizResult quizResult) { this.quizResult = quizResult; }
-    public int getQuestionIndex() { return questionIndex; }
-    public void setQuestionIndex(int questionIndex) { this.questionIndex = questionIndex; }
-    public int getNumA() { return numA; }
-    public void setNumA(int numA) { this.numA = numA; }
-    public int getNumB() { return numB; }
-    public void setNumB(int numB) { this.numB = numB; }
-    public int getCorrectAnswer() { return correctAnswer; }
-    public void setCorrectAnswer(int correctAnswer) { this.correctAnswer = correctAnswer; }
-    public int getUserAnswer() { return userAnswer; }
-    public void setUserAnswer(int userAnswer) { this.userAnswer = userAnswer; }
-    public boolean isCorrect() { return isCorrect; }
-    public void setCorrect(boolean correct) { isCorrect = correct; }
-    public Integer getResponseTimeMs() { return responseTimeMs; }
-    public void setResponseTimeMs(Integer responseTimeMs) { this.responseTimeMs = responseTimeMs; }
 }

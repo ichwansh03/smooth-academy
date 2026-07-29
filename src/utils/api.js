@@ -20,6 +20,13 @@ export function registerUser(email, password, displayName) {
   })
 }
 
+export function loginUser(email, password) {
+  return request('/users/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  })
+}
+
 export function getUserByEmail(email) {
   return request(`/users/by-email/${encodeURIComponent(email)}`)
 }

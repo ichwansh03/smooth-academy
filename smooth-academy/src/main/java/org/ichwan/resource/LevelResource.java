@@ -1,10 +1,11 @@
 package org.ichwan.resource;
 
-import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import org.ichwan.entity.Level;
+import org.ichwan.service.LevelService;
 
 import java.util.List;
 
@@ -12,17 +13,19 @@ import java.util.List;
 @Path("/levels")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class LevelResource implements PanacheRepositoryBase<Level, Integer> {
+public class LevelResource {
+
+    @Inject
+    LevelService levelService;
 
     @GET
     public List<Level> listAllLevels() {
-        return list("ORDER BY sort_order");
+        return levelService.listAll();
     }
 
     @GET
     @Path("/{id}")
     public Level getLevel(@PathParam("id") Integer id) {
-        return findByIdOptional(id)
-                .orElseThrow(() -> new WebApplicationException(404));
+        return levelService.findById(id);
     }
 }

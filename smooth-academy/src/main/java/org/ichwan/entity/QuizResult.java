@@ -1,12 +1,17 @@
 package org.ichwan.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
 @Entity
 @Table(name = "quiz_results")
+@Getter @Setter
+@NoArgsConstructor @AllArgsConstructor
+@Builder
 public class QuizResult {
 
     @Id
@@ -43,23 +48,4 @@ public class QuizResult {
     void onCreate() {
         createdAt = Instant.now();
     }
-
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
-    public Level getLevel() { return level; }
-    public void setLevel(Level level) { this.level = level; }
-    public String getMode() { return mode; }
-    public void setMode(String mode) { this.mode = mode; }
-    public int getTotalQuestions() { return totalQuestions; }
-    public void setTotalQuestions(int totalQuestions) { this.totalQuestions = totalQuestions; }
-    public int getCorrectCount() { return correctCount; }
-    public void setCorrectCount(int correctCount) { this.correctCount = correctCount; }
-    public BigDecimal getPercentage() { return percentage; }
-    public void setPercentage(BigDecimal percentage) { this.percentage = percentage; }
-    public int getStarsEarned() { return starsEarned; }
-    public void setStarsEarned(int starsEarned) { this.starsEarned = starsEarned; }
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }
