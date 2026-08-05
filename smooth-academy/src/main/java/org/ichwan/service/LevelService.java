@@ -15,7 +15,7 @@ public class LevelService {
     LevelRepository levelRepository;
 
     public List<Level> listAll() {
-        return levelRepository.list("ORDER BY sort_order");
+        return levelRepository.list("ORDER BY sortOrder");
     }
 
     public Level findById(Integer id) {
