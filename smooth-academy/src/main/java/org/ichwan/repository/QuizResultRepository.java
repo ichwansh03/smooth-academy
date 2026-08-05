@@ -11,6 +11,6 @@ import java.util.UUID;
 public class QuizResultRepository implements PanacheRepositoryBase<QuizResult, UUID> {
 
     public List<QuizResult> findByUserId(UUID userId) {
-        return list("user_id = ?1 ORDER BY created_at DESC", userId);
+        return list("user.id = ?1 ORDER BY createdAt DESC", userId);
     }
 }
