@@ -8,20 +8,28 @@ export function generateDistractors(correct, levelId) {
     else if (levelId === 2) range = [3, 20];
     else if (levelId === 3) range = [10, 50];
     else range = [20, 200];
+    const maxAllowed = levelId === 1 ? 9 : Infinity;
     let attempts = 0;
     while (distractors.size < 3 && attempts < 100) {
         const offset = Math.floor(Math.random() * (range[1] - range[0] + 1)) + range[0];
         const sign = Math.random() < 0.5 ? -1 : 1;
         const candidate = correct + sign * offset;
-        if (candidate !== correct && candidate > 0 && !distractors.has(candidate)) {
+        if (candidate !== correct && candidate > 0 && candidate <= maxAllowed && !distractors.has(candidate)) {
             distractors.add(candidate);
         }
         attempts++;
     }
     while (distractors.size < 3) {
-        const fallback = correct + distractors.size + 1 + Math.floor(Math.random() * 5);
-        if (!distractors.has(fallback) && fallback !== correct && fallback > 0) {
-            distractors.add(fallback);
+        if (levelId === 1) {
+            const fallback = Math.floor(Math.random() * 9) + 1;
+            if (fallback !== correct && !distractors.has(fallback)) {
+                distractors.add(fallback);
+            }
+        } else {
+            const fallback = correct + distractors.size + 1 + Math.floor(Math.random() * 5);
+            if (!distractors.has(fallback) && fallback !== correct && fallback > 0) {
+                distractors.add(fallback);
+            }
         }
     }
     return Array.from(distractors).slice(0, 3);
@@ -45,7 +53,7 @@ export function generateQuestions(levelId, count) {
             }
             key = a + '-' + b;
             attempts++;
-        } while (usedPairs.has(key) && attempts < 50);
+        } while ((usedPairs.has(key) || (levelId === 1 && a + b > 9)) && attempts < 50);
         usedPairs.add(key);
         const correctAnswer = a + b;
         const distractors = generateDistractors(correctAnswer, levelId);
